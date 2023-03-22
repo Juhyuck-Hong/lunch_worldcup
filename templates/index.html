@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+    <title>🍕점심메뉴 월드컵🍚</title>
+    <script>
+        $(document).ready(function () {
+            show_results()
+        })
+        function show_results() {
+            $("#results").empty()
+            fetch('/results').then((res) => res.json()).then((data) => {
+                let row = data["results"]
+                row.forEach((i) => {
+                    let name = i["name"]
+                    let food = i["result"]
+                    let url = i["url"]
+
+                    let temp_html = `
+                    <div class="col">
+                        <div class="card h-50">
+                            <img src="${url}" class="card-img-top" alt="${food}">
+                            <div class="card-body">
+                            <p class="card-text">${name}님은 점심메뉴로 ${food}를 선택!</p>
+                            </div>
+                        </div>
+                    </div>
+                    `
+                    $('#results').append(temp_html)
+                })
+            })
+
+        }
+        function redirecting() {
+            let name = $("#name").val()
+            window.location.href = "/worldcup?data=" + name
+        }
+    </script>
+    <style>
+        * {
+            font-family: "Noto Serif KR", serif;
+        }
+
+        .test {
+            background-color: green;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🍕점심메뉴 월드컵🍚</h1>
+    <button onclick=redirecting()>go to worldcup</button>
+    <div>이름: <input id="name"></div>
+    <div class="row row-cols-1 row-cols-md-4 g-4" id="results">
+    </div>
+</body>
+
+</html>
