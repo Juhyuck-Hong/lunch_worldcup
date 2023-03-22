@@ -48,7 +48,7 @@ foods = {'감자탕': 'https://health.chosun.com/site/data/img_dir/2021/01/26/20
  '피자': 'https://recipe1.ezmember.co.kr/cache/recipe/2022/08/04/8f6d10f605eb2f763bf8c0a94947c81f1.jpg',
  '햄버거 스테이크': 'https://recipe1.ezmember.co.kr/cache/recipe/2015/09/22/6308008dd029eb6235a02d7f339e5796.jpg'}
 
-rivers_set = 32
+rivers_set = 16
 
 def choose_random(pool, num_pick=1, not_to_pick=[]):
 
