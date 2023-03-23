@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+
+    <title>🍕점심메뉴 월드컵🍚</title>
+
+    <script>
+        $(document).ready(function () {
+            show_results()
+            $("#game").hide()
+            $("#autosave").hide()
+        })
+
+        function chooseRandom(pool, pickNum = 2, notToPick = []) {
+            let keys = Object.keys(pool)
+            let poolSize = keys.length
+            let candidate = {}
+
+            if (notToPick.length >= poolSize - 1) {
+                return {}
+            } else {
+                let pick = []
+                while (pick.length < pickNum) {
+                    pickOne_num = Math.floor(Math.random() * poolSize)
+                    pickOne = keys[pickOne_num]
+                    if (notToPick.includes(pickOne)) {
+                    } else {
+                        pick.push(pickOne)
+                    }
+                    pick = [...new Set(pick)]
+                }
+                pick.forEach((key) => {
+                    candidate[key] = pool[key]
+                })
+                return candidate
+            }
+
+        }
+
+        function show_results() {
+            $("#results").empty()
+            fetch('/results').then((res) => res.json()).then((data) => {
+                let row = data["results"]
+                row.forEach((i) => {
+                    let name = i["name"]
+                    let food = i["result"]
+                    let url = foods[food]
+
+                    let temp_html = `
+                    <div class="col">
+                        <div class="card h-50">
+                            <img src="${url}" class="card-img-top" alt="${food}">
+                            <div class="card-body">
+                            <p class="card-text" style="text-align: center;">${name}님은 점심으로 ${food}를 선택!</p>
+                            </div>
+                        </div>
+                    </div>
+                    `
+                    $('#results').append(temp_html)
+                })
+            })
+        }
+
+        function game() {
+            let name = $("#name").val() || "익명"
+            let riversSet = $("#riversInput").val()
+            console.log("riversSet: ", riversSet)
+            $('#riversSet').append(riversSet)
+            foods = chooseRandom(foods, riversSet)
+            load_initial_image()
+            $('#game').show()
+            alert(name + "님의 점심메뉴 월드컵 " + riversSet + "강을 시작합니다!")
+            $('#results').hide()
+            $('#middle').hide()
+        }
+
+        function terminating(res) {
+            let formData = new FormData()
+            let name = $("#name").val() || "익명"
+            //console.log(name)
+            formData.append("user_name", name)
+            formData.append("chosen_name", res)
+
+            fetch('/results', { method: "POST", body: formData, }).then((res) => res.json()).then((data) => {
+                console.log(data)
+                alert(data["msg"])
+                window.location.href = "/"
+            })
+        }
+
+        function load_initial_image() {
+            candidate = chooseRandom(foods)
+
+            nameList = Object.keys(candidate)
+            let img1Name = nameList[0]
+            let img1Url = candidate[nameList[0]]
+            let img2Name = nameList[1]
+            let img2Url = candidate[nameList[1]]
+
+            let gameHtml = `
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 id="name_left" class="card-title" style="text-align: center;">${img1Name}</h5>
+                            <img id="image_left" onclick="call_autosave(event)" src="${img1Url}" class="card-img-top" alt="${img1Name}" style="width: 100%; height: auto;">
+                        </div>
+                    </div>
+                </div>
+                    <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 id="name_right" class="card-title" style="text-align: center;">${img2Name}</h5>
+                            <img id="image_right" onclick="call_autosave(event)" src="${img2Url}" class="card-img-top" alt="${img2Name}" style="width: 100%; height: auto;">
+                        </div>
+                    </div>
+                </div>
+            `
+            $('#game').append(gameHtml)
+        }
+
+        function call_autosave(event) {
+            let click = event.currentTarget
+            let droppedAlt = ""
+            let droppedId = ""
+            let riversSet = $('#riversSet').text()
+
+            if (click.id == "image_left") {
+                droppedAlt = $('#image_right').attr('alt')
+                droppedId = $('#image_right').attr('id')
+            } else {
+                droppedAlt = $('#image_left').attr('alt')
+                droppedId = $('#image_left').attr('id')
+            }
+
+            let formData = new FormData()
+            let newChosen = click.alt
+            let newDropped = droppedAlt
+            let chosen = $('#chosen').text().split(',')
+            let dropped = $('#dropped').text().split(',')
+
+            // 선택한 메뉴 array 업데이트
+            if (chosen[0]) { chosen.push(newChosen) } else { chosen[0] = newChosen }
+            chosen = [...new Set(chosen)]
+
+            // 비선택 메뉴 array 업데이트
+            if (dropped[0]) { dropped.push(newDropped) } else { dropped[0] = newDropped }
+            dropped = [...new Set(dropped)]
+
+            // 선택과 비선택 array 길이의 합이 riversSet과 같으면 해당 차수 종료
+            // 선택과 비선택 array 길이의 합이 riversSet과 같으면서 선택 array의 개수가 1개면 결승 종료
+            console.log(chosen.length, dropped.length, riversSet)
+            if ((chosen.length + dropped.length == riversSet) && chosen.length == 1) {
+                alert(`결승 종료! 점심메뉴로 ${chosen[0]}을 선택하셨군요!`)
+                return terminating(chosen[0])
+            } else if (chosen.length + dropped.length == riversSet) {
+                chosen = []
+                alert(riversSet - dropped.length + "강 시작!")
+            } else {
+                console.log("playing...")
+            }
+
+            // 선택한 메뉴 html 업데이트
+            $('#chosen').empty()
+            $('#chosen').append(chosen.join(','))
+
+            // 비선택 메뉴 html 업데이트
+            $('#dropped').empty()
+            $('#dropped').append(dropped.join(','))
+
+            // 새로운 메뉴 2개 추출 {name1: url1, name2: url2}
+            candidate = chooseRandom(foods, 2, [...chosen, ...dropped])
+
+            nameList = Object.keys(candidate)
+            let img1Name = nameList[0]
+            let img1Url = candidate[nameList[0]]
+            let img2Name = nameList[1]
+            let img2Url = candidate[nameList[1]]
+
+            $('#game').empty()
+
+            let gameHtml = `
+                <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 id="name_left" class="card-title" style="text-align: center;">${img1Name}</h5>
+                            <img id="image_left" onclick="call_autosave(event)" src="${img1Url}" class="card-img-top" alt="${img1Name}" style="width: 100%; height: auto;">
+                        </div>
+                    </div>
+                </div>
+                    <div class="col">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 id="name_right" class="card-title" style="text-align: center;">${img2Name}</h5>
+                            <img id="image_right" onclick="call_autosave(event)" src="${img2Url}" class="card-img-top" alt="${img2Name}" style="width: 100%; height: auto;">
+                        </div>
+                    </div>
+                </div>
+            `
+            $('#game').append(gameHtml)
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sunflower:wght@300&display=swap');
+
+        * {
+            font-family: 'Sunflower', sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .top {
+            width: 100%;
+            height: 200px;
+            background-color: darkorange;
+            background-position: center;
+            background-size: cover;
+            margin: 20px auto 20px auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .top>h1 {
+            padding-bottom: 0px;
+            color: white;
+        }
+
+        .nameandgo {
+            width: 400px;
+            height: 55px;
+            margin: 20px auto;
+            padding: 5px;
+            box-shadow: 0px 0px 1px 0px grey;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .form {
+            border-radius: 5px;
+            border: 2px solid #ddd;
+            width: 200px;
+            padding: 1px;
+        }
+
+        .test {
+            background-color: green;
+        }
+
+        .bottom {
+            width: 90%;
+            margin: 0px auto;
+        }
+
+        .nameandgo>input {
+            width: 70%;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="top">
+        <h1>🍕점심메뉴 월드컵🍚</h1>
+    </div>
+    <div class="middle" id="middle">
+        <div class="nameandgo">
+            <input id="name" class="form-control" type="text" placeholder="이름을 입력하세요." style="max-width: 150px;"/>
+            <p></p>
+            <select class="form-select" id="riversInput" style="max-width: 150px;">
+                <option selected value="32">32강부터 시작</option>
+                <option value="16">16강부터 시작</option>
+                <option value="8">8강부터 시작</option>
+                <option value="4">4강부터 시작</option>
+            </select>
+            <button class="btn btn-primary" onclick=game()>시작!</button>
+        </div>
+    </div>
+
+    <div class="bottom">
+        <div class="row row-cols-1 row-cols-md-2 g-4" id="game">
+        </div>
+
+        <div class="row row-cols-1 row-cols-md-4 g-4" id="results">
+        </div>
+    </div>
+
+    <div id="autosave">
+        <div id="chosen"></div>
+        <div id="dropped"></div>
+        <div id="riversSet"></div>
+        <script>
+            var foods = { '감자탕': 'https://health.chosun.com/site/data/img_dir/2021/01/26/2021012602424_0.jpg', '고등어구이': 'https://recipe1.ezmember.co.kr/cache/recipe/2019/10/14/eafe70f3fbb6b6cdfbc8f8a1283f0c011.jpg', '김밥': 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Gimbap_%28pixabay%29.jpg', '돈까스': 'https://cdn.clien.net/web/api/file/F01/7262338/14b0f13e08ca3f.jpg', '돈부리': 'https://rimage.gnst.jp/livejapan.com/public/article/detail/a/00/05/a0005066/img/ko/a0005066_main.jpg', '떡볶이': 'https://funshop.akamaized.net/products/0000098549/vs_image800.jpg', '라면': 'https://img.insight.co.kr/static/2017/12/13/2000/9mg762010d3cw399d659.jpg', '만두국': 'https://recipe1.ezmember.co.kr/cache/recipe/2021/02/06/d0d6c059f08600bb14b23ed917b064141.jpg', '백반': 'https://cloudfront-ap-northeast-1.images.arcpublishing.com/chosun/P4YBXVVUCMS3P7KDH2IKMGELC4.jpg', '버거': 'https://cloudfront-ap-northeast-1.images.arcpublishing.com/chosunbiz/T76RHKX27GOS5BHD6LCD5W6DNQ.jpg', '볶음밥': 'https://i.ytimg.com/vi/S_glK_h78xI/maxresdefault.jpg', '불고기': 'https://recipe1.ezmember.co.kr/cache/recipe/2019/03/03/11baafbe81803965b17c3ab42a5992cb1.jpg', '비빔밥': 'https://i.pinimg.com/originals/d5/b3/ba/d5b3ba6572223074aed75a6daf945d5a.jpg', '삼겹살': 'https://mp-seoul-image-production-s3.mangoplate.com/mango_pick/uker6u9xhkr1m8.jpg', '샌드위치': 'https://recipe1.ezmember.co.kr/cache/recipe/2021/12/23/8f1022f46829257d51b21cf1d08d72241.jpg', '샐러드': 'https://src.hidoc.co.kr/image/lib/2021/2/17/1613545788294_0.jpg', '샤브샤브': 'https://www.elandretail.com/upload/20170828170024_0.jpg', '수제비': 'https://recipe1.ezmember.co.kr/cache/recipe/2016/07/28/f563617e4c5f769e84377e0ee4668e621.jpg', '스테이크': 'https://recipe1.ezmember.co.kr/cache/recipe/2017/07/09/6741acc7f6bf0f7d04245851fb365c311.jpg', '쌀국수': 'https://i.pinimg.com/originals/bd/7f/a4/bd7fa4ec8ea81665e4608df059d940be.jpg', '야채볶음': 'https://recipe1.ezmember.co.kr/cache/recipe/2019/04/07/d50dbf8eb8668092c11828dc9d39260d1.jpg', '짜장면': 'https://recipe1.ezmember.co.kr/cache/recipe/2021/10/26/8f82be9c22ec2f4f9ab25363cc611b141.jpg', '짬뽕': 'https://recipe1.ezmember.co.kr/cache/recipe/2017/06/19/2756808e5603db7a18c4f5ee9a699ee41.jpg', '초밥': 'https://watermark.lovepik.com/photo/50053/3820.jpg_wh1200.jpg', '치킨 텐더': 'https://recipe1.ezmember.co.kr/cache/recipe/2017/12/19/e0df7cee9917c1e0bb31bd9645d0d3791.jpg', '콩국수': 'https://src.hidoc.co.kr/image/lib/2019/7/25/20190725103200889_0.jpg', '타코': 'https://recipe1.ezmember.co.kr/cache/recipe/2020/06/17/41f36e22404c059d9750b8eabcddb77f1.jpg', '탕수육': 'https://homecuisine.co.kr/files/attach/images/142/073/002/99b983892094b5c6d2fc3736e15da7d1.JPG', '파니니': 'https://www.newiki.net/w/images/thumb/f/ff/Panini.jpg/1200px-Panini.jpg', '파스타': 'https://recipe1.ezmember.co.kr/cache/recipe/2019/04/01/f8b3042c80a214dd7cc60fa2027cdc9d1.jpg', '피자': 'https://recipe1.ezmember.co.kr/cache/recipe/2022/08/04/8f6d10f605eb2f763bf8c0a94947c81f1.jpg', '햄버거 스테이크': 'https://recipe1.ezmember.co.kr/cache/recipe/2015/09/22/6308008dd029eb6235a02d7f339e5796.jpg' }        
+        </script>
+    </div>
+
+
+</body>
+
+</html>
